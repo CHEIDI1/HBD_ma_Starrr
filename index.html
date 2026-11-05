@@ -197,6 +197,7 @@ const PHOTOS = [
   {src:"assets/photos/photo-11.jpg", th:"assets/photos/photo-11-th.jpg", cap:"💗"},
   {src:"assets/photos/photo-12.jpg", th:"assets/photos/photo-12-th.jpg", cap:"✨"}
 ];
+const MUSIC = "assets/DOC-20261105-WA0013.mp3"; // la chanson (à mettre dans le dossier assets)
 const VIDEOS = [
   {src:"assets/videos/video-1.mp4", title:"Happy birthday 🎂🎉"},
   {src:"assets/videos/video-2.mp4", title:"complice 🤍✨"},
@@ -210,10 +211,18 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const calm=matchMedia("(prefers-reduced-motion:reduce)").matches;
 $$(".NAME").forEach(e=>e.textContent=NAME);
 
+/* musique : démarre à l’ouverture de l’enveloppe, se met en pause pendant les vidéos */
+const song=new Audio(MUSIC);song.loop=true;song.preload="auto";
+let wantMusic=false,inVideo=false;
+function playMusic(){if(!wantMusic||inVideo)return;const p=song.play();if(p&&p.catch)p.catch(()=>{})}
+function startMusic(){wantMusic=true;playMusic()}
+/* si le navigateur a bloqué le son (ouverture automatique), il démarre au premier toucher */
+["pointerdown","keydown","touchstart"].forEach(ev=>addEventListener(ev,()=>{if(wantMusic&&!inVideo&&song.paused)playMusic()},{passive:true}));
+
 /* ouverture : enveloppe -> lettre -> site + pluie (une seule fois) */
 let opened=false,entered=false;
 let launched=false;
-function openSite(){if(opened)return;opened=true;$("#openEnv").classList.add("open");
+function openSite(){if(opened)return;opened=true;startMusic();$("#openEnv").classList.add("open");
   setTimeout(()=>{$("#intro").classList.add("gone");document.body.classList.add("in");shower()},calm?0:650)}
 $("#openEnv").onclick=()=>{if(launched)return;if(LOCK&&new Date()<BDAY){$("#cdmsg").textContent="Chut… reviens le grand jour 🎂";return}openSite()};
 /* quand la date arrive : 3, 2, 1, puis la page s’ouvre toute seule */
@@ -297,9 +306,10 @@ function openZoom(kind,item,title){
     ?(item.src?'<video controls autoplay playsinline src="'+item.src+'"></video>':'<div class="zph">🎬</div>')
     :(item.src?'<img alt="'+title+'" src="'+item.src+'">':'<div class="zph">🌸</div>');
   zbody.innerHTML='<div class="zframe">'+media+'<div class="hand">'+title+'</div></div>';
+  if(kind==="video"){inVideo=true;song.pause()}
   zoom.classList.add("open");$("#zx").focus();
 }
-function closeZoom(){zoom.classList.remove("open");zbody.innerHTML=""}
+function closeZoom(){zoom.classList.remove("open");zbody.innerHTML="";if(inVideo){inVideo=false;playMusic()}}
 zoom.onclick=e=>{if(e.target===zoom||e.target.id==="zx")closeZoom()};
 addEventListener("keydown",e=>{if(e.key==="Escape")closeZoom()});
 
